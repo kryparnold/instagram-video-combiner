@@ -7,12 +7,12 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips
 # Load environment variables from .env file
 load_dotenv()
 
-def download_reels(username, password, collection_url):
+def download_reels(username, password, collection_name):
     client = Client()
     client.login(username,password)
     
     # Get collection medias by name
-    collection_medias = client.collection_medias_by_name("ece")
+    collection_medias = client.collection_medias_by_name(collection_name)
     
     video_clips = []
     media_ids = []
@@ -25,7 +25,7 @@ def download_reels(username, password, collection_url):
             print(f"Downloaded {video_filename}")
             video_clip = VideoFileClip(video_filename)
             video_clips.append(video_clip)
-            media_ids.append(video_clip)
+            media_ids.append(media.id)
         
     if video_clips:
         # Trim a small portion (1 second) from the end of each video to avoid repetition
