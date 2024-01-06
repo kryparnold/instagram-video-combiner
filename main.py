@@ -1,5 +1,4 @@
 from instagrapi import Client
-import json
 import os
 import requests
 from dotenv import load_dotenv
@@ -8,25 +7,26 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips
 # Load environment variables from .env file
 load_dotenv()
 
-def download_reels(username, password, reels_urls):
+def download_reels(username, password, collection_url):
     client = Client()
-    client.login(username, password)
-
+    client.login(username,password)
+    
+    # Get collection medias by name
+    collection_medias = client.collection_medias_by_name("ece")
+    
     video_clips = []
-    media_ids = []  # Keep track of media IDs
-
-    for url in reels_urls:
-        media_id = client.media_pk_from_url(url)
-        media_info = client.media_info(media_id)
+    media_ids = []
+    for media in collection_medias:
+        media_info = client.media_info(media.id)
         
-        if media_info.media_type == 2:  # 2 represents video media type
+        if(media_info.media_type == 2):
             video_url = media_info.video_url
-            video_filename = download_video(video_url, f"{media_id}.mp4")
+            video_filename = download_video(video_url, f"{media.id}.mp4")
             print(f"Downloaded {video_filename}")
             video_clip = VideoFileClip(video_filename)
             video_clips.append(video_clip)
-            media_ids.append(media_id)
-            
+            media_ids.append(video_clip)
+        
     if video_clips:
         # Trim a small portion (1 second) from the end of each video to avoid repetition
         trimmed_clips = [clip.subclip(0, clip.duration - 0.25) for clip in video_clips]
@@ -63,20 +63,15 @@ def delete_downloaded_videos(media_ids):
 def main():
     instagram_username = os.getenv('INSTAGRAM_USERNAME')
     instagram_password = os.getenv('INSTAGRAM_PASSWORD')
+    collection_name = input("Please type your collection name: ")
 
     if not (instagram_username and instagram_password):
         print("Error: Instagram credentials not found in .env file.")
         return
 
-    try:
-        with open('reels.json', 'r') as file:
-            reels_data = json.load(file)
-            reels_urls = reels_data.get('urls', [])
-            download_reels(instagram_username, instagram_password, reels_urls)
-    except FileNotFoundError:
-        print("Error: reels.json not found.")
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON in reels.json file.")
+
+    download_reels(instagram_username, instagram_password, collection_name)
+
 
 if __name__ == "__main__":
     main()
